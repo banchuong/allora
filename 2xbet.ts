@@ -10,8 +10,8 @@ const contract = new web3.eth.Contract(abiContent, contractAddress);
 
 // private keys of two metamask accounts
 const privateKeys = [
-  "e85d11402c68831912ec7af079ee2059986c81",
-  "your_second_private_key_here"
+  "your_second_private_key1_here",
+  "your_second_private_key2_here"
 ];
 
 // Giá betting, tối thiểu 0.00001 eth mạng arb
