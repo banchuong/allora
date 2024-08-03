@@ -8,10 +8,10 @@ const contractAddress = "0x1cdc19b13729f16c5284a0ace825f83fc9d799f4";
 
 const contract = new web3.eth.Contract(abiContent, contractAddress);
 
-// private keys of two metamask accounts
+// Private keys of two metamask accounts
 const privateKeys = [
   "your_second_private_key1_here",
-  "your_second_private_key2_here"
+  "your_second_private_key2key2_here"
 ];
 
 // Giá betting, tối thiểu 0.00001 eth mạng arb
@@ -20,7 +20,7 @@ const betValue = "0.0001";
 // Số eth tối thiểu có trong ví
 const minBalance = "0.0009";
 
-const betBull = async () => {
+const bet = async () => {
   console.log("\n==================== STARTING ====================\n");
 
   // Check balances of both accounts
@@ -48,7 +48,9 @@ const betBull = async () => {
   }
 
   // Bet for both accounts
-  for (const privateKey of privateKeys) {
+  const betMethods = ["betBull", "betBear"];
+  for (let i = 0; i < privateKeys.length; i++) {
+    const privateKey = privateKeys[i];
     const wallet = web3.eth.accounts.privateKeyToAccount(`0x${privateKey}`);
     const address = wallet.address;
     const isBet = await hasBet(currentEpoch, address);
@@ -63,13 +65,13 @@ const betBull = async () => {
         const gasEstimate = await web3.eth.estimateGas({
           from: wallet.address,
           to: contractAddress,
-          data: contract.methods.betBull(currentEpoch).encodeABI(),
+          data: contract.methods[betMethods[i]](currentEpoch).encodeABI(),
           value: betValueInWei,
         });
 
         const txn = {
           to: contractAddress,
-          data: contract.methods.betBull(currentEpoch).encodeABI(),
+          data: contract.methods[betMethods[i]](currentEpoch).encodeABI(),
           gasLimit: gasEstimate,
           gasPrice: BigInt(gasPrice) + BigInt(gasPrice) / 5n,
           nonce,
@@ -86,7 +88,7 @@ const betBull = async () => {
     }
   }
 
-  console.log(`Source x.com/trangchongcheng edit nhacmatquan - telegram: t.me/airdrop101xyz\n`);
+  console.log(`Source x.com/trangchongcheng/edit nhacmatquan - telegram: t.me/airdrop101xyz\n`);
   console.log("====================== END ======================\n");
 };
 
@@ -131,4 +133,4 @@ const claimEpoch = async (currentEpoch: any, address: string, privateKey: string
   }
 };
 
-setInterval(betBull, 6 * 59 * 1000);
+setInterval(bet, 6 * 59 * 1000);
