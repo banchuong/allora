@@ -13,8 +13,8 @@ const contract = new web3.eth.Contract(abiContent, contractAddress);
 
 // Private keys from environment variables
 const privateKeys = [
-  process.env.PRIVATE_KEY_1,
-  process.env.PRIVATE_KEY_2
+  process.env.PRIVATE_KEY_1!,
+  process.env.PRIVATE_KEY_2!
 ];
 
 // Giá betting, tối thiểu 0.00001 eth mạng arb
@@ -70,10 +70,32 @@ const bet = async () => {
           to: contractAddress,
           data: contract.methods[betMethods[i]](currentEpoch).encodeABI(),
           value: betValueInWei,
-        nhacmatquan - telegram: t.me/airdrop101xyz\n`);
+        });
+
+        const txn = {
+          to: contractAddress,
+          data: contract.methods[betMethods[i]](currentEpoch).encodeABI(),
+          gasLimit: gasEstimate,
+          gasPrice: BigInt(gasPrice) + BigInt(gasPrice) / 5n,
+          nonce,
+          value: betValueInWei,
+        };
+
+        console.log(`Ví ${address} đang betting, epoch: ${currentEpoch}`);
+        const signedTxn = await web3.eth.accounts.signTransaction(txn, `0x${privateKey}`);
+        const txHash = await web3.eth.sendSignedTransaction(signedTxn.rawTransaction as string);
+        console.log(`Ví ${address} betting thành công epoch: ${currentEpoch}, tx: ${txHash.transactionHash}`);
+      } catch (error: any) {
+        console.log(`Đã xảy ra lỗi với ví ${address}, `, error);
+      }
+    }
+  }
+
+  console.log(`Source x.com/trangchongcheng/edit nhacmatquan - telegram: t.me/airdrop101xyz\n`);
   console.log("====================== END ======================\n");
 };
 
+// Định nghĩa hàm hasBet
 const hasBet = async (epoch: any, address: string) => {
   try {
     const betInfo: any = await contract.methods.ledger(epoch, address).call();
@@ -84,6 +106,7 @@ const hasBet = async (epoch: any, address: string) => {
   }
 };
 
+// Định nghĩa hàm claimEpoch
 const claimEpoch = async (currentEpoch: any, address: string, privateKey: string) => {
   for (let epoch = BigInt(currentEpoch) - 5n; epoch < BigInt(currentEpoch); epoch++) {
     const claimable = await contract.methods.claimable(epoch.toString(), address).call();
