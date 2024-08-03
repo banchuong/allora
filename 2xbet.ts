@@ -8,39 +8,54 @@ const contractAddress = "0x1cdc19b13729f16c5284a0ace825f83fc9d799f4";
 
 const contract = new web3.eth.Contract(abiContent, contractAddress);
 
-// private key metamask
-const privateKey = "e85d11402c68831912ec7af079ee205b85bbe56889986c81";
+// private keys of two metamask accounts
+const privateKeys = [
+  "e85d11402c68831912ec7af079ee2059986c81",
+  "your_second_private_key_here"
+];
 
 // Giá betting, tối thiểu 0.00001 eth mạng arb
 const betValue = "0.0001";
 
 // Số eth tối thiểu có trong ví
-const minBalance = "0.0001";
+const minBalance = "0.0009";
 
 const betBull = async () => {
   console.log("\n==================== STARTING ====================\n");
-  const wallet = web3.eth.accounts.privateKeyToAccount(`0x${privateKey}`);
-  const address = wallet.address;
-  const balance = await web3.eth.getBalance(address);
-  const balanceInWei = web3.utils.fromWei(balance, "ether");
-  console.log(`Số dư còn lại: ${balanceInWei}`);
 
-  if (Number(balanceInWei) < Number(minBalance)) {
-    console.log(`Số dư trong ví còn quá ít, số dư: ${balanceInWei}`);
-  } else {
-    const betValueInWei = web3.utils.toWei(betValue, "ether");
-    const currentEpoch: any = await contract.methods.currentEpoch().call();
+  // Check balances of both accounts
+  for (const privateKey of privateKeys) {
+    const wallet = web3.eth.accounts.privateKeyToAccount(`0x${privateKey}`);
+    const address = wallet.address;
+    const balance = await web3.eth.getBalance(address);
+    const balanceInWei = web3.utils.fromWei(balance, "ether");
+    console.log(`Số dư của ví ${address}: ${balanceInWei} ETH`);
 
-    // 1. Claim reward của 5 epoch trước đó
-    await claimEpoch(currentEpoch, address);
+    if (Number(balanceInWei) < Number(minBalance)) {
+      console.log(`Số dư trong ví ${address} còn quá ít, số dư: ${balanceInWei} ETH`);
+      return;
+    }
+  }
 
-    // 2. Kiểm tra epoch hiện tại có thể betting được không
-    const isBet = await hasBet(currentEpoch, wallet.address);
+  const betValueInWei = web3.utils.toWei(betValue, "ether");
+  const currentEpoch: any = await contract.methods.currentEpoch().call();
+
+  // Claim rewards for both accounts
+  for (const privateKey of privateKeys) {
+    const wallet = web3.eth.accounts.privateKeyToAccount(`0x${privateKey}`);
+    const address = wallet.address;
+    await claimEpoch(currentEpoch, address, privateKey);
+  }
+
+  // Bet for both accounts
+  for (const privateKey of privateKeys) {
+    const wallet = web3.eth.accounts.privateKeyToAccount(`0x${privateKey}`);
+    const address = wallet.address;
+    const isBet = await hasBet(currentEpoch, address);
 
     if (isBet) {
-      console.log(`Bạn đã betting epoch ${currentEpoch} rồi \n`);
+      console.log(`Ví ${address} đã betting epoch ${currentEpoch} rồi \n`);
     } else {
-      // 3. Betting
       try {
         let nonce = await web3.eth.getTransactionCount(wallet.address, "pending");
         const gasPrice = await web3.eth.getGasPrice();
@@ -61,15 +76,16 @@ const betBull = async () => {
           value: betValueInWei,
         };
 
-        console.log(`Đang betting, epoch: ${currentEpoch}`);
+        console.log(`Ví ${address} đang betting, epoch: ${currentEpoch}`);
         const signedTxn = await web3.eth.accounts.signTransaction(txn, `0x${privateKey}`);
         const txHash = await web3.eth.sendSignedTransaction(signedTxn.rawTransaction as string);
-        console.log(`Betting thành công epoch: ${currentEpoch}, tx: ${txHash.transactionHash}`);
+        console.log(`Ví ${address} betting thành công epoch: ${currentEpoch}, tx: ${txHash.transactionHash}`);
       } catch (error: any) {
-        console.log("Đã xảy ra lỗi, ", error);
+        console.log(`Đã xảy ra lỗi với ví ${address}, `, error);
       }
     }
   }
+
   console.log(`Source x.com/trangchongcheng edit nhacmatquan - telegram: t.me/airdrop101xyz\n`);
   console.log("====================== END ======================\n");
 };
@@ -84,11 +100,11 @@ const hasBet = async (epoch: any, address: string) => {
   }
 };
 
-const claimEpoch = async (currentEpoch: any, address: string) => {
+const claimEpoch = async (currentEpoch: any, address: string, privateKey: string) => {
   for (let epoch = BigInt(currentEpoch) - 5n; epoch < BigInt(currentEpoch); epoch++) {
     const claimable = await contract.methods.claimable(epoch.toString(), address).call();
     if (claimable) {
-      console.log(`Đang claim reward epoch ${epoch}`);
+      console.log(`Ví ${address} đang claim reward epoch ${epoch}`);
       try {
         const gasEstimate = await web3.eth.estimateGas({
           from: address,
@@ -107,9 +123,9 @@ const claimEpoch = async (currentEpoch: any, address: string) => {
         };
         const signedTxn = await web3.eth.accounts.signTransaction(txn, `0x${privateKey}`);
         const txHash = await web3.eth.sendSignedTransaction(signedTxn.rawTransaction as string);
-        console.log(`Claim thành công reward epoch: ${epoch}, tx: ${txHash.transactionHash}`);
+        console.log(`Ví ${address} claim thành công reward epoch: ${epoch}, tx: ${txHash.transactionHash}`);
       } catch (error) {
-        console.error(`Lỗi khi claim reward ở epoch ${epoch}: ${error}`);
+        console.error(`Lỗi khi claim reward ở epoch ${epoch} với ví ${address}: ${error}`);
       }
     }
   }
